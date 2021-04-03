@@ -1,12 +1,11 @@
 import rospy # Python library for ROS
-#from sensor_msgs.msg import Image # Image is the message type
-from std_msgs.msg import String # Image is the message type
+from sensor_msgs.msg import Image # Image is the message type
 from cv_bridge import CvBridge # Package to convert between ROS and OpenCV Images
 import sys
 sys.path.remove("/opt/ros/kinetic/lib/python2.7/dist-packages")
 import cv2 # OpenCV library
 import time 
-import pandas as pd
+
 
 import torch
 import torchvision.models as models
@@ -41,16 +40,14 @@ def forward_model(img_arr):
     labels = outputs["labels"].cpu().detach().numpy()
     masks = outputs["masks"].cpu().detach().numpy()
     
-    keep = probs > 0.7
+    keep = probs > 0.5
     probs = probs[keep]
     labels = labels[keep]
     boxes = boxes[keep]
     masks = masks[keep]
 
-    #draw_arr = draw_bboxes(img_arr, boxes, labels, probs)
-    #return draw_arr
-    gen_str = gen_string(labels, probs)
-    return gen_str
+    draw_arr = draw_bboxes(img_arr, boxes, labels, probs)
+    return draw_arr
 
 def draw_bboxes(img_arr, boxes, labels, scores):
     for box, label, score in zip(boxes, labels, scores):
@@ -60,24 +57,11 @@ def draw_bboxes(img_arr, boxes, labels, scores):
                     (x1+10, y1+10), cv2.FONT_HERSHEY_SIMPLEX, 2, (0,0,255), 2)
     return img_arr
 
-def gen_string(labels, scores):
-    # labels의 클래스별로 몇개가 검출되었는지 string으로 topic발생
-    # ex) person : 3, cup : 1
-    df = pd.DataFrame(labels, columns=['label'])
-    grouped = df.groupby('label')
-    result = '========== Detection Results per Frame ==========\n'
-    
-    for label, group in grouped:
-        name = COCO_INSTANCE_CATEGORY_NAMES[int(label)]
-        tmp = name + ' : ' + str(len(group)) + '\n'
-        result = result + tmp
-    
-    return result
 
 def publish_message():
     # Node is publishing to the video_frames topic using 
     # the message type Image
-    pub = rospy.Publisher('string', String, queue_size=10)
+    pub = rospy.Publisher('image', Image, queue_size=10)
     # Tells rospy the name of the node.
     # Anonymous = True makes sure the node has a unique name. Random
     # numbers are added to the end of the name.
@@ -86,7 +70,7 @@ def publish_message():
     rate = rospy.Rate(10) # 10hz
 
     # Create a VideoCapture object
-    cap = cv2.VideoCapture(0)   # laptop cam (0) / usb 435i (2)
+    cap = cv2.VideoCapture(0)
     assert cap.isOpened(), 'Cannot capture source'
 
     # Used to convert between ROS and OpenCV images
@@ -102,15 +86,14 @@ def publish_message():
         if rospy.is_shutdown():
             print("ROS is not running")
             time.sleep(3)
-            #continue
-            break
+            continue         
         # Print debugging information to the terminal
         rospy.loginfo('publishing video frame')
             
         # Publish the image.
         # The 'cv2_to_imgmsg' method converts an OpenCV
         # image to a ROS image message
-        pub.publish(frame)
+        pub.publish(br.cv2_to_imgmsg(frame))
                 
         # Sleep just enough to maintain the desired rate
         # rate.sleep()
