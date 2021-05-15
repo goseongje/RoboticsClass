@@ -2,7 +2,7 @@ import rospy # Python library for ROS
 from sensor_msgs.msg import Image # Image is the message type
 from cv_bridge import CvBridge # Package to convert between ROS and OpenCV Images
 import sys
-sys.path.remove("/opt/ros/kinetic/lib/python2.7/dist-packages")
+sys.path.remove("/opt/ros/melodic/lib/python2.7/dist-packages")
 import cv2 # OpenCV library
 import time 
 

@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/opt/ros/kinetic/lib/python2.7/dist-packages")
+sys.path.append("/opt/ros/melodic/lib/python2.7/dist-packages")
 import rospy # Python library for ROS
 # from sensor_msgs.msg import Image # Image is the message type
 from std_msgs.msg import String # String is the message type
